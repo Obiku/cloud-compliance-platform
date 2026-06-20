@@ -119,6 +119,19 @@ Build out the ServiceNow governance layer and connect it to the AWS environment.
 - Build a Python integration against the ServiceNow Table API that: pushes Security Hub findings as Issues, updates Compliance Assessment results from AWS Config's compliance state, and attaches evidence links from the S3 evidence store
 - Add the ACL/segregation-of-duties configuration as a control in the RCM, and test it by re-performance — create test users for each role, attempt restricted actions, confirm correct allow/deny
 
+**Change log:** Reused the platform's built-in GRC roles (`sn_compliance.manager`,
+`sn_risk.manager`, `sn_compliance.reader` + `sn_risk.reader`) for control
+owner/risk manager/auditor instead of defining brand-new custom roles, since
+they already map cleanly to those personas. Built the Python integration as an
+on-demand CLI rather than a scheduled Lambda, consistent with Phase 4's
+precedent that human-triggered writes into the GRC system of record are
+deliberate, not automatic. The SoD ACL and the risk-to-control traceability
+link remain outstanding due to two separate ServiceNow PDI platform issues
+(a script-editor rendering bug, and a business rule that appears to require
+ServiceNow's own "Add" related-list UI flow rather than a direct API insert) —
+see `docs/phase7_servicenow_integration.md` for full detail and exact
+reproduction steps.
+
 ---
 
 ## Phase 8 — GRC reporting

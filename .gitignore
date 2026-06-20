@@ -25,6 +25,9 @@ htmlcov/
 *.key
 credentials.json
 
+# Generated artifacts (regenerate with scripts/render_project_plan_docx.py)
+PROJECT_PLAN.docx
+
 # OS / editor
 .DS_Store
 .vscode/
