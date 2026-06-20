@@ -39,13 +39,29 @@ misconfigurations, confirmed against this codebase to correctly flag real HIGH f
 
 ## Why CI doesn't run a live `terraform plan` against AWS
 
-CI's `terraform plan` runs with `-backend=false` and no AWS credentials. It always shows
-"everything to create" (no real state to diff against), so it functions as a syntax and
-logic smoke test, not a live drift check. No AWS credentials are stored in GitHub
-Secrets. The real `plan`/`apply` against the live backend continues to run from the
-maintainer's machine via the AWS CLI, as it has since Phase 1 — this avoids putting
-long-lived AWS credentials (or the added complexity of OIDC federation) into CI for a
-sandbox/lab project where it isn't yet justified.
+No real AWS credentials are stored in GitHub Secrets. To get a working `terraform plan`
+without them, the `terraform` job:
+
+1. Writes an `override.tf` at run time that swaps the real `backend "s3"` block for
+   `backend "local" {}` (Terraform requires backend consistency between `init` and
+   `plan`, so this has to be a real override, not just a missing flag).
+2. Passes dummy `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` values as env vars, since the
+   AWS SDK errors out before even attempting a network call if no credentials are present
+   at all.
+3. Passes `-var ci_smoke_test=true`, a variable defined in
+   `terraform/environments/sandbox/variables.tf` (default `false`) that sets
+   `skip_credentials_validation` / `skip_requesting_account_id` on the AWS provider. Without
+   this, the provider calls `GetCallerIdentity` against real AWS on every run regardless
+   of backend, which fails immediately even with the dummy credentials above.
+
+The resulting plan runs entirely offline against empty local state, so it always shows
+"everything to create" — it's a syntax/logic smoke test, not a live drift check. The real
+`plan`/`apply` against the live backend continues to run from the maintainer's machine
+via the AWS CLI, as it has since Phase 1 — this avoids putting long-lived AWS credentials
+(or the added complexity of OIDC federation) into CI for a sandbox/lab project where it
+isn't yet justified. `ci_smoke_test` defaults to `false`, so it has no effect on local
+plans/applies against the real account (confirmed via `terraform plan` showing zero drift
+after merging this change).
 
 ## Verification performed before wiring the gate
 
@@ -77,6 +93,13 @@ rule IDs:
   (codebase has no Python logic yet beyond the Lambda placeholder).
 - **pip-audit** (`pip-audit -r python/requirements.txt`): 0 known vulnerabilities in
   `boto3`.
+
+The first CI run still failed twice after this local verification — a missing `v` prefix
+on the `aquasecurity/trivy-action` tag, and that tag (`v0.28.0`) itself depending on a
+since-deleted `aquasecurity/setup-trivy` release upstream (resolved by bumping to
+`v0.36.0`, which pins that dependency by commit hash). Both were diagnosed from the
+GitHub Actions job logs and reproduced in an isolated local copy of the Terraform code
+before being fixed and re-pushed.
 
 ## CIS AWS Benchmark / framework mapping
 
