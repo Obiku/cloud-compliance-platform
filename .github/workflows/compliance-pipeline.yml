@@ -1,0 +1,96 @@
+name: Compliance Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform fmt / validate / plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive terraform
+
+      - name: terraform init (no backend)
+        working-directory: terraform/environments/sandbox
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        working-directory: terraform/environments/sandbox
+        run: terraform validate
+
+      - name: terraform plan (ephemeral, no AWS credentials)
+        working-directory: terraform/environments/sandbox
+        run: terraform plan -input=false -lock=false
+        # No AWS credentials are configured in CI. This plan runs against empty local
+        # state, so it always shows "everything to create" - it is a syntax/logic smoke
+        # test, not a real diff against the live account. The real plan/apply against
+        # the live backend is run locally; see docs/policy_mapping.md.
+
+  checkov:
+    name: Checkov (CIS-mapped IaC coverage, informational)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: true
+          output_format: cli
+        # Checkov's open-source edition does not assign severity to findings, so it
+        # cannot participate in the critical/high blocking gate (see docs/policy_mapping.md).
+        # It runs informationally for broad CIS AWS Benchmark coverage; Trivy below
+        # provides the severity-based gate.
+
+  trivy:
+    name: Trivy config scan (blocks on CRITICAL/HIGH)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: terraform
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+  bandit:
+    name: Bandit SAST (blocks on MEDIUM/HIGH)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install bandit
+      - name: Run Bandit
+        run: bandit -r python terraform/modules/compute/lambda_src -ll
+
+  pip-audit:
+    name: pip-audit dependency scan (blocks on any unaccepted vulnerability)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - name: Run pip-audit
+        run: pip-audit -r python/requirements.txt
+        # Accepted findings are recorded in docs/vulnerability_log.md and suppressed
+        # here with --ignore-vuln <ID> once triaged, never silently.

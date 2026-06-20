@@ -62,11 +62,87 @@ resource "aws_iam_group_policy_attachment" "compliance_admins" {
   policy_arn = aws_iam_policy.compliance_admin.arn
 }
 
+# Standard AWS-recommended "deny unless MFA present" template: blocks everything except
+# the handful of self-service actions a user needs to sign in and enroll their own MFA
+# device, so users can still bootstrap access on first login.
+data "aws_iam_policy_document" "require_mfa" {
+  statement {
+    sid       = "AllowViewAccountInfo"
+    effect    = "Allow"
+    actions   = ["iam:GetAccountPasswordPolicy", "iam:ListVirtualMFADevices"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AllowManageOwnPasswordAndMfa"
+    effect = "Allow"
+    actions = [
+      "iam:ChangePassword",
+      "iam:GetUser",
+      "iam:CreateVirtualMFADevice",
+      "iam:EnableMFADevice",
+      "iam:ResyncMFADevice",
+      "iam:ListMFADevices",
+      "iam:DeactivateMFADevice",
+      "iam:DeleteVirtualMFADevice",
+    ]
+    resources = ["arn:aws:iam::*:user/$${aws:username}", "arn:aws:iam::*:mfa/$${aws:username}"]
+  }
+
+  statement {
+    sid    = "DenyAllExceptListedIfNoMfa"
+    effect = "Deny"
+    not_actions = [
+      "iam:ChangePassword",
+      "iam:GetUser",
+      "iam:GetAccountPasswordPolicy",
+      "iam:ListVirtualMFADevices",
+      "iam:ListMFADevices",
+      "iam:CreateVirtualMFADevice",
+      "iam:EnableMFADevice",
+      "iam:ResyncMFADevice",
+      "iam:DeactivateMFADevice",
+      "iam:DeleteVirtualMFADevice",
+      "sts:GetSessionToken",
+    ]
+    resources = ["*"]
+
+    condition {
+      test     = "BoolIfExists"
+      variable = "aws:MultiFactorAuthPresent"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "require_mfa" {
+  name   = "${var.name_prefix}-require-mfa"
+  policy = data.aws_iam_policy_document.require_mfa.json
+}
+
+resource "aws_iam_group_policy_attachment" "compliance_auditors_require_mfa" {
+  group      = aws_iam_group.compliance_auditors.name
+  policy_arn = aws_iam_policy.require_mfa.arn
+}
+
+resource "aws_iam_group_policy_attachment" "cloud_engineers_require_mfa" {
+  group      = aws_iam_group.cloud_engineers.name
+  policy_arn = aws_iam_policy.require_mfa.arn
+}
+
+resource "aws_iam_group_policy_attachment" "compliance_admins_require_mfa" {
+  group      = aws_iam_group.compliance_admins.name
+  policy_arn = aws_iam_policy.require_mfa.arn
+}
+
 # --- Phase 1 seeded issue ---
 # Intentionally insecure IAM user: AdministratorAccess attached directly, no group
 # membership, and no MFA device enrolled. This is detected in Phase 3 (Security Hub /
 # Config) and remediated in Phase 4 (IAM governance automation). Do not replicate this
-# pattern elsewhere in the project.
+# pattern elsewhere in the project. Tracked as an accepted finding in
+# docs/vulnerability_log.md rather than fixed here, since fixing it would defeat its
+# purpose as a seeded issue.
+#trivy:ignore:AWS-0143
 resource "aws_iam_user" "seeded_legacy_admin" {
   count = var.create_seeded_admin_user ? 1 : 0
   name  = "${var.name_prefix}-legacy-admin"
