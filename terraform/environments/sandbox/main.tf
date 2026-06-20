@@ -93,3 +93,72 @@ module "monitoring" {
   name_prefix = var.name_prefix
   tags        = local.tags
 }
+
+# The CloudTrail trail itself was created manually in Phase 0 (outside Terraform),
+# so there is no module output to reference here - this name just has to match it.
+locals {
+  cloudtrail_trail_name = "${var.name_prefix}-trail"
+}
+
+data "aws_iam_policy_document" "evidence_collection_lambda" {
+  statement {
+    sid    = "ReadConfigCompliance"
+    effect = "Allow"
+    actions = [
+      "config:GetConformancePackComplianceSummary",
+      "config:GetConformancePackComplianceDetails",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "ReadSecurityHubFindings"
+    effect    = "Allow"
+    actions   = ["securityhub:GetFindings"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ReadCloudTrail"
+    effect = "Allow"
+    actions = [
+      "cloudtrail:DescribeTrails",
+      "cloudtrail:GetTrailStatus",
+      "cloudtrail:LookupEvents",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "WriteEvidenceReports"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${module.s3.evidence_bucket_arn}/evidence/*"]
+  }
+
+  statement {
+    sid       = "EncryptEvidenceReports"
+    effect    = "Allow"
+    actions   = ["kms:GenerateDataKey"]
+    resources = [module.s3.evidence_bucket_kms_key_arn]
+  }
+}
+
+module "evidence_collection_compute" {
+  source = "../../modules/compute"
+
+  name_prefix          = var.name_prefix
+  function_name_suffix = "evidence-collection"
+  source_dir           = "${path.root}/../../../python/phase5_evidence_collection"
+  package_name         = "phase5_evidence_collection"
+  handler              = "phase5_evidence_collection.handler.lambda_handler"
+  timeout              = 120
+  schedule_expression  = "rate(1 day)"
+  extra_policy_json    = data.aws_iam_policy_document.evidence_collection_lambda.json
+  environment_variables = {
+    EVIDENCE_BUCKET       = module.s3.evidence_bucket_name
+    CONFORMANCE_PACK_NAME = module.monitoring.conformance_pack_name
+    TRAIL_NAME            = local.cloudtrail_trail_name
+  }
+  tags = local.tags
+}

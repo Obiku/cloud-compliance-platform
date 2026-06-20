@@ -29,3 +29,7 @@ output "automation_lambda_arn" {
 output "conformance_pack_arn" {
   value = module.monitoring.conformance_pack_arn
 }
+
+output "evidence_collection_lambda_arn" {
+  value = module.evidence_collection_compute.automation_lambda_arn
+}

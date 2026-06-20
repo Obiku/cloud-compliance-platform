@@ -79,13 +79,18 @@ Automate detection and remediation of excessive privileges and dormant accounts.
 
 ---
 
-## Phase 5 — Automated evidence collection pipeline
+## Phase 5 — Automated evidence collection pipeline *(revised)*
 
 Automate the collection and organisation of audit evidence.
 
-- Write boto3 scripts/Lambdas to pull Config compliance snapshots, Security Hub findings, CloudTrail samples, and Audit Manager reports
+- Write boto3 scripts/Lambdas to pull Config compliance snapshots, Security Hub findings, and CloudTrail samples
 - Store outputs as timestamped artifacts in S3, organised by control ID
 - Build an initial control matrix mapping each evidence artifact to ISO 27001 Annex A clauses and SOC 2 Trust Services Criteria
+
+**Change log:** Dropped "Audit Manager reports" from the evidence sources — a direct
+consequence of Phase 3's finding that Audit Manager can no longer be enabled for this
+account (see Phase 3's change log). The remaining three sources (Config, Security Hub,
+CloudTrail) are unaffected.
 
 ---
 
