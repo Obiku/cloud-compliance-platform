@@ -18,6 +18,7 @@ yet.
 | `CTRL-SECURITYHUB-FINDINGS` | Security Hub active FAILED findings (CIS AWS Foundations, AWS FSBP) | CIS AWS Foundations; AWS FSBP; ISO 27001 A.12.6.1; SOC 2 CC7.1 | obiku | Detective | Automated (Phase 5 Lambda evidence collection) | Daily |
 | `CTRL-CLOUDTRAIL-LOGGING` | CloudTrail trail is multi-region, logging, and actively delivering events | ISO 27001 A.12.4.1; SOC 2 CC7.2 | obiku | Detective | Automated (Phase 5 Lambda evidence collection) | Daily |
 | `CTRL-CICD-POLICYGATE` | CI pipeline blocks merges on CRITICAL/HIGH IaC findings (Trivy) and MEDIUM/HIGH SAST findings (Bandit) | ISO 27001 A.14.2.1; SOC 2 CC8.1 | obiku | Preventive | Automated (GitHub Actions) | Per commit/PR |
+| `CTRL-SOD-ISSUE-CLOSE` | The ServiceNow user who opened a GRC Issue (`sn_grc_issue`) cannot be the one who closes it (sets state to Closed Complete/Closed Incomplete) | ISO 27001 A.6.1.2 (segregation of duties); SOC 2 CC5.3 | obiku | Preventive | Automated (ServiceNow ACL on `sn_grc_issue.state`) | Continuous (evaluated on every write) |
 
 ## Notes on classification
 
