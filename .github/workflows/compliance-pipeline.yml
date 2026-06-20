@@ -23,9 +23,18 @@ jobs:
       - name: terraform fmt
         run: terraform fmt -check -recursive terraform
 
-      - name: terraform init (no backend)
+      - name: override remote backend with local (no AWS credentials in CI)
         working-directory: terraform/environments/sandbox
-        run: terraform init -backend=false -input=false
+        run: |
+          cat > override.tf <<'EOF'
+          terraform {
+            backend "local" {}
+          }
+          EOF
+
+      - name: terraform init
+        working-directory: terraform/environments/sandbox
+        run: terraform init -input=false
 
       - name: terraform validate
         working-directory: terraform/environments/sandbox
@@ -34,10 +43,11 @@ jobs:
       - name: terraform plan (ephemeral, no AWS credentials)
         working-directory: terraform/environments/sandbox
         run: terraform plan -input=false -lock=false
-        # No AWS credentials are configured in CI. This plan runs against empty local
-        # state, so it always shows "everything to create" - it is a syntax/logic smoke
-        # test, not a real diff against the live account. The real plan/apply against
-        # the live backend is run locally; see docs/policy_mapping.md.
+        # No AWS credentials are configured in CI, and the override.tf above swaps the
+        # real S3 backend for a local one, so this plan runs against empty local state
+        # and always shows "everything to create" - it is a syntax/logic smoke test,
+        # not a real diff against the live account. The real plan/apply against the
+        # live backend is run locally; see docs/policy_mapping.md.
 
   checkov:
     name: Checkov (CIS-mapped IaC coverage, informational)
@@ -62,7 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Trivy config scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: config
           scan-ref: terraform
