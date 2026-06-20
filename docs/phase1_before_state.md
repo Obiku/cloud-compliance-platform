@@ -19,19 +19,33 @@ prove. This document records their state as built, for later comparison.
 - **Expected remediation:** Phase 4 IAM governance automation flags and (with approval)
   deactivates/downgrades this user.
 
-## Seeded issue 2 — S3 bucket without encryption at rest
+## Seeded issue 2 — S3 bucket without encryption at rest (superseded — see correction)
+
+> **Correction from Phase 3 verification:** this seeded issue no longer represents a
+> real gap. AWS enabled default SSE-S3 encryption for all buckets account-wide in
+> January 2023, so `cloud-compliance-platform-legacy-data-...` is encrypted (confirmed
+> via `aws s3api get-bucket-encryption`) regardless of the absent
+> `aws_s3_bucket_server_side_encryption_configuration` resource below. Security Hub
+> correctly reports it as compliant on encryption. See `docs/phase3_monitoring.md` for
+> the full writeup. The bucket is left as originally built (still useful as a
+> "legacy, never-hardened" example for other checks below), but it should not be
+> described as having a real encryption gap.
 
 - **Resource:** S3 bucket `cloud-compliance-platform-legacy-data-575141563901`
 - **Module:** `terraform/modules/s3` (`aws_s3_bucket.seeded_unencrypted`)
-- **Issue:** No `aws_s3_bucket_server_side_encryption_configuration` is attached.
-  Public access is still blocked — only the encryption-at-rest control is missing, to
-  avoid any real exposure risk while still failing the relevant compliance check.
-- **Why this is non-compliant:** fails CIS AWS Foundations check 2.1.1 and the
-  AWS Config managed rule `s3-bucket-server-side-encryption-enabled`.
-- **Expected detection:** AWS Config conformance pack and Security Hub FSBP findings,
-  enabled in Phase 3.
-- **Expected remediation:** Phase 4/5 automation applies a default SSE configuration
-  and records the change as evidence.
+- **Issue (as originally designed):** No `aws_s3_bucket_server_side_encryption_configuration`
+  is attached. Public access is still blocked — only the encryption-at-rest control was
+  meant to be missing, to avoid any real exposure risk while still failing the relevant
+  compliance check.
+- **Why this was meant to be non-compliant:** fails CIS AWS Foundations check 2.1.1 and
+  the AWS Config managed rule `s3-bucket-server-side-encryption-enabled` — except the
+  bucket isn't actually non-compliant on this control anymore (see correction above).
+- **What's actually detected (confirmed in Phase 3):** Security Hub FSBP findings for
+  this bucket — "S3 general purpose buckets should require requests to use SSL",
+  "...should have server access logging enabled", "...should have Lifecycle
+  configurations" — all FAILED, and are real, undisputed gaps.
+- **Expected remediation:** Phase 4/5 automation addresses the SSL-enforcement,
+  logging, and lifecycle gaps and records the change as evidence.
 
 ## Compliant baseline for comparison
 

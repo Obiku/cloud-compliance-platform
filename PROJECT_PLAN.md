@@ -43,16 +43,28 @@ Enforce governance at the pipeline level, before infrastructure is ever deployed
 
 ---
 
-## Phase 3 — Continuous cloud compliance monitoring
+## Phase 3 — Continuous cloud compliance monitoring *(revised)*
 
 Turn on AWS's native continuous monitoring services and confirm they correctly detect the Phase 1 issues.
 
-- Enable AWS Config with a conformance pack mapped to ISO 27001/NIST CSF
+- Enable AWS Config with a conformance pack mapped to NIST CSF
 - Enable Security Hub with the CIS AWS Foundations and AWS FSBP standards
 - Enable GuardDuty
 - Enable an organization CloudTrail
-- Enable Audit Manager using its built-in ISO 27001 and SOC 2 frameworks
 - Confirm the seeded IAM and S3 issues are flagged correctly
+
+**Change log:** Dropped "ISO 27001" from the Config conformance pack bullet — AWS publishes
+no official ISO 27001 conformance pack sample template (only NIST CSF, CIS, and various
+others); NIST CSF is used instead. Removed the Audit Manager bullet entirely: AWS put
+Audit Manager into maintenance mode on April 30, 2026 and no longer allows enabling it
+for new accounts or new regions, and this account was never registered for it before
+that cutoff — confirmed via `RegisterAccount` returning a `ValidationException` for
+exactly this reason. Checked for an alternative AWS-native source of automated ISO
+27001/SOC 2 control mapping (Security Hub's available standards were enumerated via
+`describe-standards`) and found none — Security Hub only offers CIS, AWS FSBP, NIST
+800-53/171, and PCI DSS. ISO 27001/SOC 2 framework mapping is now produced entirely by
+the manual Risk & Control Matrix and gap analysis in Phases 5/6/9, rather than
+cross-checked against an automated AWS service.
 
 ---
 
@@ -140,7 +152,7 @@ Package the work into something that can be walked through end to end.
 | Resume bullet | Phase(s) |
 |---|---|
 | Terraform baseline + Checkov/tfsec + Bandit gating via GitHub Actions | 1, 2 |
-| Continuous compliance monitoring (Config, Security Hub, GuardDuty, CloudTrail, Audit Manager) mapped to ISO 27001/SOC 2/NIST CSF | 3 |
+| Continuous compliance monitoring (Config, Security Hub, GuardDuty, CloudTrail) mapped to NIST CSF/CIS/FSBP | 3 |
 | Python/boto3 IAM governance automation + evidence collection | 4, 5 |
 | Formal control testing program (RCM, sampling, inspection/re-performance, exceptions) | 6 |
 | ServiceNow IRM integration (REST API, Authority Documents, Risk Register, Compliance Assessments, ACL/SoD) | 7 |

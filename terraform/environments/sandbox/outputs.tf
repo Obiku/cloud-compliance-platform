@@ -25,3 +25,7 @@ output "seeded_legacy_admin_user_name" {
 output "automation_lambda_arn" {
   value = module.compute.automation_lambda_arn
 }
+
+output "conformance_pack_arn" {
+  value = module.monitoring.conformance_pack_arn
+}

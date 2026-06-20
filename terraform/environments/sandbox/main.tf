@@ -39,3 +39,10 @@ module "compute" {
   name_prefix = var.name_prefix
   tags        = local.tags
 }
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  name_prefix = var.name_prefix
+  tags        = local.tags
+}
