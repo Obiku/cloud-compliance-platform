@@ -96,7 +96,7 @@ jobs:
           python-version: "3.12"
       - run: pip install bandit
       - name: Run Bandit
-        run: bandit -r python terraform/modules/compute/lambda_src -ll
+        run: bandit -r python -ll
 
   pip-audit:
     name: pip-audit dependency scan (blocks on any unaccepted vulnerability)
@@ -107,7 +107,22 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pip-audit
-      - name: Run pip-audit
+      - name: Run pip-audit (runtime dependencies)
         run: pip-audit -r python/requirements.txt
+      - name: Run pip-audit (dev/test dependencies)
+        run: pip-audit -r python/requirements-dev.txt
         # Accepted findings are recorded in docs/vulnerability_log.md and suppressed
         # here with --ignore-vuln <ID> once triaged, never silently.
+
+  pytest:
+    name: pytest (phase4_iam_governance unit tests, mocked AWS via moto)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r python/requirements-dev.txt
+      - name: Run pytest
+        working-directory: python
+        run: pytest -v

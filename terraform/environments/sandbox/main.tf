@@ -33,11 +33,58 @@ module "s3" {
   tags                             = local.tags
 }
 
+data "aws_iam_policy_document" "iam_governance_lambda" {
+  statement {
+    sid    = "ReadOnlyIamForScanning"
+    effect = "Allow"
+    actions = [
+      "iam:GenerateCredentialReport",
+      "iam:GenerateServiceLastAccessedDetails",
+      "iam:GetAccountSummary",
+      "iam:GetLoginProfile",
+      "iam:ListAccessKeys",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListAttachedUserPolicies",
+      "iam:ListMFADevices",
+      "iam:ListRoleTags",
+      "iam:ListRoles",
+      "iam:ListUserTags",
+      "iam:ListUsers",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "WriteEvidenceReports"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["${module.s3.evidence_bucket_arn}/iam-governance/*"]
+  }
+
+  statement {
+    sid       = "EncryptEvidenceReports"
+    effect    = "Allow"
+    actions   = ["kms:GenerateDataKey"]
+    resources = [module.s3.evidence_bucket_kms_key_arn]
+  }
+}
+
 module "compute" {
   source = "../../modules/compute"
 
-  name_prefix = var.name_prefix
-  tags        = local.tags
+  name_prefix          = var.name_prefix
+  function_name_suffix = "iam-governance-scan"
+  source_dir           = "${path.root}/../../../python/phase4_iam_governance"
+  package_name         = "phase4_iam_governance"
+  handler              = "phase4_iam_governance.handler.lambda_handler"
+  timeout              = 120
+  schedule_expression  = "rate(1 day)"
+  extra_policy_json    = data.aws_iam_policy_document.iam_governance_lambda.json
+  environment_variables = {
+    NAME_PREFIX     = var.name_prefix
+    EVIDENCE_BUCKET = module.s3.evidence_bucket_name
+  }
+  tags = local.tags
 }
 
 module "monitoring" {

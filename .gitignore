@@ -5,7 +5,7 @@
 *.tfvars
 !*.tfvars.example
 crash.log
-**/lambda_src.zip
+**/.archives/
 
 # Python
 __pycache__/

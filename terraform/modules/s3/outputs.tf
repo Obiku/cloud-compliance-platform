@@ -6,6 +6,10 @@ output "evidence_bucket_arn" {
   value = aws_s3_bucket.evidence.arn
 }
 
+output "evidence_bucket_kms_key_arn" {
+  value = aws_kms_key.evidence.arn
+}
+
 output "seeded_unencrypted_bucket_name" {
   value = var.create_seeded_unencrypted_bucket ? aws_s3_bucket.seeded_unencrypted[0].id : null
 }

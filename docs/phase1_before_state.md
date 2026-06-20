@@ -5,7 +5,13 @@ baseline, so that Phase 3 (continuous monitoring) has something real to detect a
 Phase 4/5/6 (remediation, evidence, control testing) have something real to fix and
 prove. This document records their state as built, for later comparison.
 
-## Seeded issue 1 — IAM user with AdministratorAccess and no MFA
+## Seeded issue 1 — IAM user with AdministratorAccess and no MFA (remediated in Phase 4)
+
+> **Status:** detected as designed in Phase 3, remediated live in Phase 4. The
+> Terraform *code* still defines the `AdministratorAccess` attachment deliberately —
+> it's needed to re-seed this issue for Phase 6's control re-performance test. See
+> `docs/phase4_iam_governance.md` for the before/after evidence and
+> `docs/vulnerability_log.md` (VL-003) for the current live-vs-code distinction.
 
 - **Resource:** IAM user `cloud-compliance-platform-legacy-admin`
 - **Module:** `terraform/modules/iam` (`aws_iam_user.seeded_legacy_admin`)
@@ -13,11 +19,14 @@ prove. This document records their state as built, for later comparison.
   (not via a group), and no MFA device is enrolled.
 - **Why this is non-compliant:** violates least-privilege and fails CIS AWS Foundations
   checks 1.4/1.5/1.6 (root/IAM user MFA, no direct admin policy attachment).
-- **Expected detection:** AWS Config managed rules (`iam-user-mfa-enabled`,
-  `iam-policy-no-statements-with-admin-access`) and Security Hub CIS/FSBP findings,
-  enabled in Phase 3.
-- **Expected remediation:** Phase 4 IAM governance automation flags and (with approval)
-  deactivates/downgrades this user.
+- **Confirmed detection (Phase 3):** Security Hub AWS FSBP findings — "IAM users should
+  not have IAM policies attached" and `iam-user-group-membership-check`, both FAILED.
+- **Confirmed remediation (Phase 4):** the Phase 4 IAM governance scanner flagged it,
+  and `python -m phase4_iam_governance.cli remediate --check iam_admin_access_attached
+  --resource-id cloud-compliance-platform-legacy-admin --approve` detached the policy
+  via boto3 (not Terraform), confirmed by a before/after re-scan. `terraform plan`
+  now shows this attachment as 1 resource to add — left un-applied so the
+  remediation stays in effect until Phase 6 needs to re-seed it.
 
 ## Seeded issue 2 — S3 bucket without encryption at rest (superseded — see correction)
 
