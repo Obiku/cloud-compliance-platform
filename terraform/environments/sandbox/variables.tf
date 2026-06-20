@@ -21,3 +21,9 @@ variable "azs" {
   type        = list(string)
   default     = ["eu-west-2a", "eu-west-2b"]
 }
+
+variable "ci_smoke_test" {
+  description = "Set true only in CI, where no real AWS credentials are configured, to skip the AWS provider's credential validation call"
+  type        = bool
+  default     = false
+}

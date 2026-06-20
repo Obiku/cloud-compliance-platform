@@ -16,6 +16,13 @@ terraform {
 provider "aws" {
   region = var.region
 
+  # Lets the CI smoke-test plan (no real AWS credentials, see
+  # docs/policy_mapping.md) skip the GetCallerIdentity call the provider makes
+  # on every run. Defaults to false so local plans/applies against the real
+  # account are unaffected.
+  skip_credentials_validation = var.ci_smoke_test
+  skip_requesting_account_id  = var.ci_smoke_test
+
   default_tags {
     tags = {
       Project     = "cloud-compliance-platform"

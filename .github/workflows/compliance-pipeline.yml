@@ -42,11 +42,18 @@ jobs:
 
       - name: terraform plan (ephemeral, no AWS credentials)
         working-directory: terraform/environments/sandbox
-        run: terraform plan -input=false -lock=false
-        # No AWS credentials are configured in CI, and the override.tf above swaps the
-        # real S3 backend for a local one, so this plan runs against empty local state
-        # and always shows "everything to create" - it is a syntax/logic smoke test,
-        # not a real diff against the live account. The real plan/apply against the
+        env:
+          AWS_ACCESS_KEY_ID: "test"
+          AWS_SECRET_ACCESS_KEY: "test"
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: terraform plan -input=false -lock=false -var ci_smoke_test=true
+        # No real AWS credentials are configured in CI - the fake key/secret above only
+        # satisfy the provider's SDK, which otherwise errors before even reaching AWS.
+        # ci_smoke_test=true skips the provider's GetCallerIdentity validation call, which
+        # would otherwise hit real AWS and fail with these fake credentials. override.tf
+        # above swaps the real S3 backend for a local one, so this plan runs against empty
+        # local state and always shows "everything to create" - it is a syntax/logic smoke
+        # test, not a real diff against the live account. The real plan/apply against the
         # live backend is run locally; see docs/policy_mapping.md.
 
   checkov:
