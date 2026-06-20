@@ -50,9 +50,8 @@ variable "environment_variables" {
 }
 
 variable "extra_policy_json" {
-  description = "Optional additional IAM policy document (JSON) to attach to the Lambda execution role"
+  description = "Additional IAM policy document (JSON) to attach to the Lambda execution role, beyond AWSLambdaBasicExecutionRole"
   type        = string
-  default     = null
 }
 
 variable "schedule_expression" {

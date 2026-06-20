@@ -20,7 +20,6 @@ resource "aws_iam_role_policy_attachment" "automation_lambda_logs" {
 }
 
 resource "aws_iam_role_policy" "automation_lambda_extra" {
-  count  = var.extra_policy_json == null ? 0 : 1
   name   = "${var.name_prefix}-${var.function_name_suffix}-extra"
   role   = aws_iam_role.automation_lambda.id
   policy = var.extra_policy_json
