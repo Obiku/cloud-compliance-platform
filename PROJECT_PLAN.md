@@ -1,180 +1,109 @@
-# Cloud Compliance Automation Platform — Project Plan
+# Cloud Compliance Automation Platform: Project Plan
 
-A single end-to-end AWS compliance automation project, governed through ServiceNow IRM, built to provide real, demonstrable, hands-on GRC engineering experience.
+A single end to end AWS compliance automation project, governed through ServiceNow IRM, built to provide real, demonstrable, hands on GRC engineering experience.
 
-The platform runs in five layers: a Terraform-based infrastructure baseline with policy-as-code CI/CD; a continuously monitored AWS environment; a Python automation and evidence layer; a ServiceNow IRM governance layer with role-based access control; and a formal control testing program tying it all together, reported through ServiceNow Performance Analytics.
+The platform runs in five layers: a Terraform based infrastructure baseline with policy as code CI/CD, a continuously monitored AWS environment, a Python automation and evidence layer, a ServiceNow IRM governance layer with role based access control, and a formal control testing program tying it all together, reported through a metrics dashboard.
 
 All code is written in Python.
 
 ---
 
-## Phase 0 — Foundations
+## Phase 0: Foundations
 
 Set up the environment everything else will run in.
 
-- Create an AWS sandbox account with billing alarms/budgets configured
-- Create a GitHub repository with branch protection rules
-- Create a ServiceNow Personal Developer Instance (PDI) and activate the IRM plugin
-- Configure Terraform remote state (S3 backend with DynamoDB locking)
+- Create an AWS sandbox account with billing alarms and budgets configured
+- Create a GitHub repository
+- Create a ServiceNow Personal Developer Instance and activate the IRM plugin
+- Configure Terraform remote state with an S3 backend and DynamoDB locking
 
 ---
 
-## Phase 1 — Compliant infrastructure baseline (Terraform)
+## Phase 1: Compliant infrastructure baseline (Terraform)
 
 Build the core AWS environment as code, with a couple of realistic, intentional issues seeded in for later phases to detect and remediate.
 
-- Write Terraform modules for VPC, IAM (users/groups/roles designed around RBAC), S3, and EC2/Lambda compute
+- Write Terraform modules for VPC, IAM (users, groups, and roles designed around RBAC), S3, and EC2/Lambda compute
 - Seed an IAM user with AdministratorAccess and no MFA
 - Seed an S3 bucket without encryption at rest
-- Document the "before" state for later reference
+- Document the before state for later reference
 
 ---
 
-## Phase 2 — Policy-as-code CI/CD pipeline *(revised)*
+## Phase 2: Policy as code CI/CD pipeline
 
 Enforce governance at the pipeline level, before infrastructure is ever deployed.
 
-- Build a GitHub Actions workflow: `terraform plan` → Checkov/tfsec scan (mapped to the CIS AWS Benchmark) → Bandit SAST scan on the Python code → dependency vulnerability scan (pip-audit) on Python dependencies
-- Configure the pipeline to block `terraform apply` on critical/high findings from any stage
-- Document which policy-as-code rules map to which framework controls
-- Track any accepted findings (false positives, accepted risk) in a lightweight vulnerability log with owner and justification — this is what turns "ran a scanner" into an actual vulnerability management process
-
-**Change log:** Removed the optional OWASP ZAP DAST pass (no demo app existed elsewhere in the plan to justify it, and DAST was dropped as a resume keyword). Replaced with pip-audit dependency scanning plus a vulnerability acceptance log, to give the "Vulnerability Management" keyword real substance instead of just running scanners.
+- Build a GitHub Actions workflow combining a Terraform plan, a static IaC scan mapped to the CIS AWS Benchmark, a Python SAST scan, and a dependency vulnerability scan
+- Configure the pipeline to block merges on critical and high findings from any stage
+- Document which policy as code rules map to which framework controls
+- Track any accepted findings, including false positives and accepted risk, in a vulnerability log with an owner and justification for each, so the process produces a real audit trail rather than just scanner output
 
 ---
 
-## Phase 3 — Continuous cloud compliance monitoring *(revised)*
+## Phase 3: Continuous cloud compliance monitoring
 
-Turn on AWS's native continuous monitoring services and confirm they correctly detect the Phase 1 issues.
+Turn on AWS native continuous monitoring and confirm it correctly detects the Phase 1 issues.
 
-- Enable AWS Config with a conformance pack mapped to NIST CSF
-- Enable Security Hub with the CIS AWS Foundations and AWS FSBP standards
+- Enable AWS Config with a conformance pack mapped to the NIST Cybersecurity Framework
+- Enable Security Hub with the CIS AWS Foundations and AWS Foundational Security Best Practices standards
 - Enable GuardDuty
-- Enable an organization CloudTrail
+- Enable an account level CloudTrail
 - Confirm the seeded IAM and S3 issues are flagged correctly
 
-**Change log:** Dropped "ISO 27001" from the Config conformance pack bullet — AWS publishes
-no official ISO 27001 conformance pack sample template (only NIST CSF, CIS, and various
-others); NIST CSF is used instead. Removed the Audit Manager bullet entirely: AWS put
-Audit Manager into maintenance mode on April 30, 2026 and no longer allows enabling it
-for new accounts or new regions, and this account was never registered for it before
-that cutoff — confirmed via `RegisterAccount` returning a `ValidationException` for
-exactly this reason. Checked for an alternative AWS-native source of automated ISO
-27001/SOC 2 control mapping (Security Hub's available standards were enumerated via
-`describe-standards`) and found none — Security Hub only offers CIS, AWS FSBP, NIST
-800-53/171, and PCI DSS. ISO 27001/SOC 2 framework mapping is now produced entirely by
-the manual Risk & Control Matrix and gap analysis in Phases 5/6/9, rather than
-cross-checked against an automated AWS service.
-
 ---
 
-## Phase 4 — IAM governance automation (Python/boto3)
+## Phase 4: IAM governance automation (Python and boto3)
 
 Automate detection and remediation of excessive privileges and dormant accounts.
 
-- Write a scheduled script/Lambda that scans IAM for: users without MFA, access keys older than 90 days, roles unused for 90+ days, and policies granting AdministratorAccess
+- Write a scheduled scan that checks IAM for users without MFA, access keys older than 90 days, roles unused for 90 or more days, and policies granting AdministratorAccess
 - Generate a remediation report from the scan
-- Add an approval-gated remediation step (e.g. deactivating the worst offenders)
-- Run it against the Phase 1 environment and capture before/after evidence
+- Add an approval gated remediation step for the highest risk findings
+- Run it against the Phase 1 environment and capture before and after evidence
 
 ---
 
-## Phase 5 — Automated evidence collection pipeline *(revised)*
+## Phase 5: Automated evidence collection pipeline
 
 Automate the collection and organisation of audit evidence.
 
-- Write boto3 scripts/Lambdas to pull Config compliance snapshots, Security Hub findings, and CloudTrail samples
+- Write scripts to pull Config compliance snapshots, Security Hub findings, and CloudTrail samples
 - Store outputs as timestamped artifacts in S3, organised by control ID
 - Build an initial control matrix mapping each evidence artifact to ISO 27001 Annex A clauses and SOC 2 Trust Services Criteria
 
-**Change log:** Dropped "Audit Manager reports" from the evidence sources — a direct
-consequence of Phase 3's finding that Audit Manager can no longer be enabled for this
-account (see Phase 3's change log). The remaining three sources (Config, Security Hub,
-CloudTrail) are unaffected.
-
 ---
 
-## Phase 6 — Control testing program
+## Phase 6: Control testing program
 
-Apply a formal, industry-standard control testing methodology to the controls built so far.
+Apply a formal, industry standard control testing methodology to the controls built so far.
 
-- Expand the control matrix into a full Risk & Control Matrix (RCM): control ID, description, framework mappings, owner, control type (preventive/detective/corrective), nature (automated/manual/hybrid), and frequency
-- For controls where a script has full API access to the population (e.g. all IAM users, all S3 buckets), test 100% of the population
-- For manual/periodic controls, define a population and select an appropriate sample
-- For automated controls, test by **re-performance**: reintroduce a seeded issue and time how long the control takes to detect it
-- For manual controls, test by **inspection**: check sampled evidence artifacts against criteria
-- Document results in a workpaper: Control ID | Test date | Procedure | Sample/population | Result | Evidence reference | Notes
+- Expand the control matrix into a full Risk and Control Matrix: control ID, description, framework mappings, owner, control type, nature, and frequency
+- For controls where a script has full access to the population, test the entire population
+- For manual or periodic controls, define a population and select an appropriate sample
+- For automated controls, test by re-performance: reintroduce a seeded issue and time how long the control takes to detect it
+- For manual controls, test by inspection: check sampled evidence artifacts against criteria
+- Document results in a workpaper covering control ID, test date, procedure, sample or population, result, evidence reference, and notes
 - Log any exception as a ServiceNow Issue with an owner, remediation plan, and retest date
 
 ---
 
-## Phase 7 — ServiceNow IRM integration
+## Phase 7: ServiceNow IRM integration
 
 Build out the ServiceNow governance layer and connect it to the AWS environment.
 
-- Configure the Policy & Compliance module: Authority Documents for ISO 27001, SOC 2, and NIST CSF, with linked Control Objectives
+- Configure the Policy and Compliance module: Authority Documents for ISO 27001, SOC 2, and NIST CSF, with linked Control Objectives
 - Set up the Risk Register
-- Define GRC roles: control owner, risk manager, auditor (read-only), admin
-- Configure ServiceNow ACL rules on the IRM tables (Controls, Risk Register, Issues, Compliance Assessments, Authority Documents) to enforce least privilege and segregation of duties — e.g. the person who raises/remediates an Issue cannot be the one who closes it
-- Build a Python integration against the ServiceNow Table API that: pushes Security Hub findings as Issues, updates Compliance Assessment results from AWS Config's compliance state, and attaches evidence links from the S3 evidence store
-- Add the ACL/segregation-of-duties configuration as a control in the RCM, and test it by re-performance — create test users for each role, attempt restricted actions, confirm correct allow/deny
-
-**Change log:** Reused the platform's built-in GRC roles (`sn_compliance.manager`,
-`sn_risk.manager`, `sn_compliance.reader` + `sn_risk.reader`) for control
-owner/risk manager/auditor instead of defining brand-new custom roles, since
-they already map cleanly to those personas. Built the Python integration as an
-on-demand CLI rather than a scheduled Lambda, consistent with Phase 4's
-precedent that human-triggered writes into the GRC system of record are
-deliberate, not automatic. The SoD ACL and the risk-to-control traceability
-link remain outstanding due to two separate ServiceNow PDI platform issues
-(a script-editor rendering bug, and a business rule that appears to require
-ServiceNow's own "Add" related-list UI flow rather than a direct API insert) —
-see `docs/phase7_servicenow_integration.md` for full detail and exact
-reproduction steps.
+- Define GRC roles: control owner, risk manager, auditor, and admin
+- Configure ServiceNow access control rules on the IRM tables to enforce least privilege and segregation of duties, so the person who raises or remediates an issue cannot be the one who closes it
+- Build a Python integration against the ServiceNow Table API that pushes Security Hub findings as Issues, updates Compliance Assessment results from AWS Config's compliance state, and attaches evidence links from the S3 evidence store
+- Add the segregation of duties configuration as a control in the Risk and Control Matrix, and test it by re-performance: create test users for each role, attempt restricted actions, and confirm correct allow and deny behaviour
 
 ---
 
-## Phase 8 — GRC reporting
+## Phase 8: GRC reporting
 
 Produce the dashboards a GRC stakeholder would actually look at.
 
-- Build a ServiceNow Performance Analytics dashboard: control effectiveness rate, risk heatmap, issue ageing, audit readiness score
-- Optionally, build a supporting Grafana dashboard from CloudWatch metrics: GuardDuty alert volume, CloudTrail activity trends, Config compliance drift
-
----
-
-## Phase 9 — Governance documentation *(revised)*
-
-Produce the supporting governance artifacts that round out a GRC program.
-
-- Finalise the Risk Register with entries derived from GuardDuty/Security Hub findings, each scored using a likelihood × impact methodology (e.g. 1–5 scale on each axis) to produce an inherent and residual risk rating per entry
-- Write a gap analysis comparing the platform's controls against ISO 27001, SOC 2, NIST CSF, and CIS Benchmarks
-- Write a lightweight TPRM assessment treating ServiceNow (as a SaaS dependency) as a third party
-
-**Change log:** Added an explicit likelihood × impact risk scoring methodology to the Risk Register bullet, to give "Risk Assessments" real backing rather than just a list of findings. Removed the data flow review (personal data/GDPR) bullet, since GDPR was dropped as a resume keyword. During execution, pulling live GuardDuty/Security Hub findings (rather than assumed ones) surfaced a real, unmitigated finding: no hardware MFA on the AWS root user, added as a third risk register entry rather than left out for not matching the two risks Phase 7 seeded. Attempting to write the resulting likelihood/impact scores into ServiceNow's existing risk records via the Table API was blocked by the same workflow-engine guardrail Phase 7 hit on `state` writes, now also reverting `likelihood`/`impact` fields once a Risk is past its initial state. Documented in `docs/risk_register.md` and `docs/tprm_assessment.md` rather than worked around, since Phase 7 already exhausted the realistic API-side workarounds for this class of issue.
-
----
-
-## Phase 10 — Defence pack and demo
-
-Package the work into something that can be walked through end to end.
-
-- Write an architecture diagram and README for the repository
-- Record a short demo walkthrough
-- Prepare a short narrative for each phase: what was built, why, and what it demonstrates
-
----
-
-## Resume bullet → phase mapping
-
-| Resume bullet | Phase(s) |
-|---|---|
-| Terraform baseline + Checkov/tfsec + Bandit gating via GitHub Actions | 1, 2 |
-| Continuous compliance monitoring (Config, Security Hub, GuardDuty, CloudTrail) mapped to NIST CSF/CIS/FSBP | 3 |
-| Python/boto3 IAM governance automation + evidence collection | 4, 5 |
-| Formal control testing program (RCM, sampling, inspection/re-performance, exceptions) | 6 |
-| ServiceNow IRM integration (REST API, Authority Documents, Risk Register, Compliance Assessments, ACL/SoD) | 7 |
-| GRC reporting via Performance Analytics | 8 |
-| Vulnerability Management (keyword) | 2 |
-| Risk Assessments (keyword) | 9 |
-| Gap Analysis, TPRM (keywords) | 9 |
+- Build a metrics dashboard covering control effectiveness, risk exposure, and ongoing monitoring activity
+- Source the underlying metrics from the AWS services already monitored in earlier phases: Config, Security Hub, GuardDuty, and CloudTrail
