@@ -23,7 +23,7 @@ variable "azs" {
 }
 
 variable "ci_smoke_test" {
-  description = "Set true only in CI, where no real AWS credentials are configured, to skip the AWS provider's credential validation call"
+  description = "Set true only in CI, where no real AWS credentials are configured. Skips the AWS provider's credential validation call, plus any data source/resource that would otherwise make a live AWS API call regardless of credential validity (GuardDuty detector lookup, IAM Identity Center lookups)."
   type        = bool
   default     = false
 }

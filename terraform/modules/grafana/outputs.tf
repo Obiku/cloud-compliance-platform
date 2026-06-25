@@ -9,7 +9,8 @@ output "workspace_id" {
 }
 
 output "grafana_admin_username" {
-  value = aws_identitystore_user.grafana_admin.user_name
+  description = "Identity Center username for the Grafana admin - null when ci_smoke_test is true"
+  value       = var.ci_smoke_test ? null : aws_identitystore_user.grafana_admin[0].user_name
 }
 
 output "dashboard_importer_token" {

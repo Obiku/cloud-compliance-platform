@@ -3,10 +3,14 @@
 # one) - the standalone instance was bootstrapped once via `aws sso-admin
 # create-instance`, free and one-time, documented in docs/phase8_grc_reporting.md.
 # Everything downstream of that is managed here.
-data "aws_ssoadmin_instances" "this" {}
+data "aws_ssoadmin_instances" "this" {
+  count = var.ci_smoke_test ? 0 : 1
+}
 
 resource "aws_identitystore_user" "grafana_admin" {
-  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+  count = var.ci_smoke_test ? 0 : 1
+
+  identity_store_id = tolist(data.aws_ssoadmin_instances.this[0].identity_store_ids)[0]
   display_name      = var.grafana_admin_username
   user_name         = var.grafana_admin_username
 
@@ -71,7 +75,7 @@ resource "aws_grafana_role_association" "admin" {
   count = var.create_workspace ? 1 : 0
 
   role         = "ADMIN"
-  user_ids     = [aws_identitystore_user.grafana_admin.user_id]
+  user_ids     = [aws_identitystore_user.grafana_admin[0].user_id]
   workspace_id = aws_grafana_workspace.this[0].id
 }
 

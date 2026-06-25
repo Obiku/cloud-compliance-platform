@@ -15,6 +15,12 @@ variable "create_workspace" {
   default     = false
 }
 
+variable "ci_smoke_test" {
+  description = "Set true only in CI, where no real AWS credentials are configured - gates out the Identity Center lookups, which make a real AWS API call independent of credential validity"
+  type        = bool
+  default     = false
+}
+
 variable "grafana_admin_username" {
   description = "IAM Identity Center username for the Grafana workspace admin"
   type        = string

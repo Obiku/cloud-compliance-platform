@@ -166,7 +166,11 @@ module "evidence_collection_compute" {
 # GuardDuty's detector is an account/region-wide singleton already created by
 # the unrelated "access-review-prod" workload (see modules/monitoring/main.tf) -
 # looked up here, not created, for the same reason that module doesn't create one.
-data "aws_guardduty_detector" "existing" {}
+# Gated by ci_smoke_test: this is a real AWS API call independent of the
+# provider's skip_credentials_validation, so it still fails CI's fake-credential plan.
+data "aws_guardduty_detector" "existing" {
+  count = var.ci_smoke_test ? 0 : 1
+}
 
 data "aws_iam_policy_document" "grc_metrics_lambda" {
   statement {
@@ -226,7 +230,7 @@ module "grc_metrics_compute" {
   extra_policy_json    = data.aws_iam_policy_document.grc_metrics_lambda.json
   environment_variables = {
     CONFORMANCE_PACK_NAME = module.monitoring.conformance_pack_name
-    GUARDDUTY_DETECTOR_ID = data.aws_guardduty_detector.existing.id
+    GUARDDUTY_DETECTOR_ID = var.ci_smoke_test ? "" : data.aws_guardduty_detector.existing[0].id
   }
   tags = local.tags
 }
@@ -236,6 +240,7 @@ module "grafana" {
 
   name_prefix            = var.name_prefix
   create_workspace       = var.create_grafana_workspace
+  ci_smoke_test          = var.ci_smoke_test
   grafana_admin_username = var.grafana_admin_username
   grafana_admin_email    = var.grafana_admin_email
   tags                   = local.tags
