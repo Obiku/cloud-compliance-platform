@@ -1,0 +1,128 @@
+{
+  "title": "Cloud Compliance Platform - GRC Metrics",
+  "uid": "ccp-grc-metrics",
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "time": { "from": "now-7d", "to": "now" },
+  "refresh": "1h",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Config Compliance Drift (non-compliant rule/resource pairs)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "cloudwatch", "uid": "${DS_CLOUDWATCH}" },
+      "targets": [
+        {
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "CloudCompliancePlatform/GRC",
+          "metricName": "ConfigNonCompliantCount",
+          "dimensions": {},
+          "matchExact": true,
+          "statistic": "Maximum",
+          "region": "eu-west-2",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Security Hub Failed Findings",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "cloudwatch", "uid": "${DS_CLOUDWATCH}" },
+      "targets": [
+        {
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "CloudCompliancePlatform/GRC",
+          "metricName": "SecurityHubFailedFindingsCount",
+          "dimensions": {},
+          "matchExact": true,
+          "statistic": "Maximum",
+          "region": "eu-west-2",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "GuardDuty Alert Volume by Severity",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "cloudwatch", "uid": "${DS_CLOUDWATCH}" },
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 30, "stacking": { "mode": "normal" } } } },
+      "targets": [
+        {
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "CloudCompliancePlatform/GRC",
+          "metricName": "GuardDutyFindingsBySeverity",
+          "dimensions": { "Severity": "Low" },
+          "matchExact": true,
+          "statistic": "Maximum",
+          "region": "eu-west-2",
+          "refId": "A"
+        },
+        {
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "CloudCompliancePlatform/GRC",
+          "metricName": "GuardDutyFindingsBySeverity",
+          "dimensions": { "Severity": "Medium" },
+          "matchExact": true,
+          "statistic": "Maximum",
+          "region": "eu-west-2",
+          "refId": "B"
+        },
+        {
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "CloudCompliancePlatform/GRC",
+          "metricName": "GuardDutyFindingsBySeverity",
+          "dimensions": { "Severity": "High" },
+          "matchExact": true,
+          "statistic": "Maximum",
+          "region": "eu-west-2",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "CloudTrail Activity Trend (sampled event count)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "cloudwatch", "uid": "${DS_CLOUDWATCH}" },
+      "targets": [
+        {
+          "queryMode": "Metrics",
+          "metricQueryType": 0,
+          "metricEditorMode": 0,
+          "namespace": "CloudCompliancePlatform/GRC",
+          "metricName": "CloudTrailEventVolume",
+          "dimensions": {},
+          "matchExact": true,
+          "statistic": "Sum",
+          "region": "eu-west-2",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "__inputs": [
+    {
+      "name": "DS_CLOUDWATCH",
+      "label": "CloudWatch",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "cloudwatch"
+    }
+  ]
+}

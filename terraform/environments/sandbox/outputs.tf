@@ -33,3 +33,16 @@ output "conformance_pack_arn" {
 output "evidence_collection_lambda_arn" {
   value = module.evidence_collection_compute.automation_lambda_arn
 }
+
+output "grc_metrics_lambda_arn" {
+  value = module.grc_metrics_compute.automation_lambda_arn
+}
+
+output "grafana_workspace_endpoint" {
+  value = module.grafana.workspace_endpoint
+}
+
+output "grafana_dashboard_importer_token" {
+  value     = module.grafana.dashboard_importer_token
+  sensitive = true
+}

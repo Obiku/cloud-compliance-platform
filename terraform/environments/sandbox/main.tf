@@ -162,3 +162,81 @@ module "evidence_collection_compute" {
   }
   tags = local.tags
 }
+
+# GuardDuty's detector is an account/region-wide singleton already created by
+# the unrelated "access-review-prod" workload (see modules/monitoring/main.tf) -
+# looked up here, not created, for the same reason that module doesn't create one.
+data "aws_guardduty_detector" "existing" {}
+
+data "aws_iam_policy_document" "grc_metrics_lambda" {
+  statement {
+    sid    = "ReadConfigCompliance"
+    effect = "Allow"
+    actions = [
+      "config:GetConformancePackComplianceSummary",
+      "config:GetConformancePackComplianceDetails",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "ReadSecurityHubFindings"
+    effect    = "Allow"
+    actions   = ["securityhub:GetFindings"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "ReadCloudTrailEventHistory"
+    effect    = "Allow"
+    actions   = ["cloudtrail:LookupEvents"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "ReadGuardDutyFindingsStatistics"
+    effect    = "Allow"
+    actions   = ["guardduty:GetFindingsStatistics"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid       = "PublishGrcMetrics"
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "cloudwatch:namespace"
+      values   = ["CloudCompliancePlatform/GRC"]
+    }
+  }
+}
+
+module "grc_metrics_compute" {
+  source = "../../modules/compute"
+
+  name_prefix          = var.name_prefix
+  function_name_suffix = "grc-metrics"
+  source_dir           = "${path.root}/../../../python/phase8_grc_metrics"
+  package_name         = "phase8_grc_metrics"
+  handler              = "phase8_grc_metrics.handler.lambda_handler"
+  timeout              = 120
+  schedule_expression  = "rate(1 day)"
+  extra_policy_json    = data.aws_iam_policy_document.grc_metrics_lambda.json
+  environment_variables = {
+    CONFORMANCE_PACK_NAME = module.monitoring.conformance_pack_name
+    GUARDDUTY_DETECTOR_ID = data.aws_guardduty_detector.existing.id
+  }
+  tags = local.tags
+}
+
+module "grafana" {
+  source = "../../modules/grafana"
+
+  name_prefix            = var.name_prefix
+  create_workspace       = var.create_grafana_workspace
+  grafana_admin_username = var.grafana_admin_username
+  grafana_admin_email    = var.grafana_admin_email
+  tags                   = local.tags
+}

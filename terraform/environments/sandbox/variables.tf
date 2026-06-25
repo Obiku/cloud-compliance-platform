@@ -27,3 +27,21 @@ variable "ci_smoke_test" {
   type        = bool
   default     = false
 }
+
+variable "create_grafana_workspace" {
+  description = "Set true to stand up the Amazon Managed Grafana workspace for a demo, false (default) to keep it torn down and cost-free. See terraform/modules/grafana."
+  type        = bool
+  default     = false
+}
+
+variable "grafana_admin_username" {
+  description = "IAM Identity Center username for the Grafana workspace admin"
+  type        = string
+  default     = "grafana-admin"
+}
+
+variable "grafana_admin_email" {
+  description = "Email address for the Grafana workspace admin's Identity Center user"
+  type        = string
+  default     = "kingsleyonyeemeosi@gmail.com"
+}
