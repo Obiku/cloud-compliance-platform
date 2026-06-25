@@ -151,7 +151,7 @@ Produce the supporting governance artifacts that round out a GRC program.
 - Write a gap analysis comparing the platform's controls against ISO 27001, SOC 2, NIST CSF, and CIS Benchmarks
 - Write a lightweight TPRM assessment treating ServiceNow (as a SaaS dependency) as a third party
 
-**Change log:** Added an explicit likelihood × impact risk scoring methodology to the Risk Register bullet, to give "Risk Assessments" real backing rather than just a list of findings. Removed the data flow review (personal data/GDPR) bullet, since GDPR was dropped as a resume keyword.
+**Change log:** Added an explicit likelihood × impact risk scoring methodology to the Risk Register bullet, to give "Risk Assessments" real backing rather than just a list of findings. Removed the data flow review (personal data/GDPR) bullet, since GDPR was dropped as a resume keyword. During execution, pulling live GuardDuty/Security Hub findings (rather than assumed ones) surfaced a real, unmitigated finding: no hardware MFA on the AWS root user, added as a third risk register entry rather than left out for not matching the two risks Phase 7 seeded. Attempting to write the resulting likelihood/impact scores into ServiceNow's existing risk records via the Table API was blocked by the same workflow-engine guardrail Phase 7 hit on `state` writes, now also reverting `likelihood`/`impact` fields once a Risk is past its initial state. Documented in `docs/risk_register.md` and `docs/tprm_assessment.md` rather than worked around, since Phase 7 already exhausted the realistic API-side workarounds for this class of issue.
 
 ---
 
