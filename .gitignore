@@ -32,3 +32,6 @@ PROJECT_PLAN.docx
 .DS_Store
 .vscode/
 *.swp
+
+# Local-only project log, not for the public repo
+DEVLOG.md

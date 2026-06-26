@@ -2,7 +2,7 @@
 
 End-to-end AWS compliance automation platform, governed through ServiceNow IRM: Terraform infrastructure baseline, policy-as-code CI/CD, continuous AWS monitoring, Python/boto3 governance automation, a formal control testing program, and GRC reporting.
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full phase-by-phase plan and [DEVLOG.md](DEVLOG.md) for a running log of what's been built so far.
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full phase-by-phase plan.
 
 ## Frameworks
 
@@ -17,7 +17,3 @@ ISO 27001:2022 · SOC 2 Type II · NIST Cybersecurity Framework · CIS AWS Bench
 ├── docs/             # Phase documentation, control matrix, RCM
 └── workpapers/        # Control testing workpapers and evidence references
 ```
-
-## Status
-
-See [DEVLOG.md](DEVLOG.md).
